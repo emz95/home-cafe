@@ -1,26 +1,50 @@
 @import "tailwindcss";
 
+/* Clean menu: drinks in two columns (one on phones), one fine-lined serif throughout. */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --bg: #fafaf8;
+  --surface: #ffffff;
+  --ink: #1c1c1a;
+  --muted: #6f6e69;
+  --line: #e6e5e0;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --bg: #141413;
+    --surface: #1c1c1a;
+    --ink: #ecebe6;
+    --muted: #9b9a93;
+    --line: #2d2d2a;
+    color-scheme: dark;
   }
 }
 
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --font-serif: var(--font-body), "Garamond", "Times New Roman", serif;
+}
+
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-serif);
+  font-size: 18px; /* Cormorant runs small */
+  font-weight: 500;
+  font-variant-numeric: lining-nums; /* Cormorant's default "1" looks like an "I" */
+}
+
+h1,
+h2,
+h3 {
+  text-wrap: balance;
+}
+
+:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
 }
