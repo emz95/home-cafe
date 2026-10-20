@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { type Dispatch, type SetStateAction, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { type Ingredient, type IngredientType, sortIngredients, TYPE_LABELS, TYPE_ORDER } from "@/lib/types";
 
@@ -11,14 +11,16 @@ type Draft = Pick<Ingredient, "name" | "display_name" | "type" | "homemade" | "a
 type View = { kind: "list" } | { kind: "add" } | { kind: "edit"; id: string };
 
 type Props = {
-  initialIngredients: Ingredient[];
+  ingredients: Ingredient[];
+  setIngredients: Dispatch<SetStateAction<Ingredient[]>>;
   // ingredient id → names of drinks that use it
   usage: Record<string, string[]>;
+  // drop a deleted ingredient from drinks held by the other tab
+  onDeleted: (id: string) => void;
 };
 
-export default function IngredientsEditor({ initialIngredients, usage }: Props) {
+export default function IngredientsEditor({ ingredients, setIngredients, usage, onDeleted }: Props) {
   const supabase = createClient();
-  const [ingredients, setIngredients] = useState(initialIngredients);
   const [view, setView] = useState<View>({ kind: "list" });
   const [search, setSearch] = useState("");
   const [message, setMessage] = useState<{ kind: "ok" | "error"; text: string } | null>(null);
@@ -64,6 +66,7 @@ export default function IngredientsEditor({ initialIngredients, usage }: Props) 
     const { error } = await supabase.from("ingredients").delete().eq("id", i.id);
     if (error) return fail(`Couldn't delete ${i.name}: ${error.message}`);
     setIngredients((list) => list.filter((x) => x.id !== i.id));
+    onDeleted(i.id);
     setMessage({ kind: "ok", text: `Deleted ${i.name}.` });
     setView({ kind: "list" });
   }

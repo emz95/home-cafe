@@ -21,6 +21,9 @@ export type Drink = {
   ingredients: Ingredient[];
 };
 
+// A drink as the admin editor holds it: ingredient ids instead of full ingredients.
+export type AdminDrink = Omit<Drink, "ingredients"> & { ingredient_ids: string[] };
+
 // Order ingredients are listed in under a drink, and add-on groups on the menu.
 export const TYPE_ORDER: IngredientType[] = ["espresso", "tea", "milk", "syrup", "foam", "topping", "other"];
 
