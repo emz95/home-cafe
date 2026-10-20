@@ -2,6 +2,8 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { SITE } from "@/lib/site";
+import type { Ingredient } from "@/lib/types";
+import IngredientsEditor from "./IngredientsEditor";
 
 export const dynamic = "force-dynamic";
 
@@ -13,6 +15,7 @@ export default async function AdminPage() {
   if (!user) redirect("/login");
 
   const { data: isAdmin } = await supabase.rpc("is_admin");
+  const data = isAdmin ? await loadAdminData(supabase) : null;
 
   return (
     <main className="mx-auto w-full max-w-4xl px-4 pt-16 pb-24 sm:px-6">
@@ -33,8 +36,13 @@ export default async function AdminPage() {
         </div>
       </header>
 
-      {isAdmin ? (
-        <p className="mt-12 text-muted">Signed in as {user.email}. Editing tools coming next.</p>
+      {data ? (
+        <section className="mt-12">
+          <h2 className="mb-6 text-sm font-semibold tracking-[0.2em] text-muted uppercase">Ingredients</h2>
+          <IngredientsEditor initialIngredients={data.ingredients} usage={data.usage} />
+        </section>
+      ) : isAdmin ? (
+        <p className="mt-12">Couldn&apos;t load your ingredients. Refresh to try again.</p>
       ) : (
         <p className="mt-12">
           {user.email} isn&apos;t allowed to edit this menu. Sign out and use the admin email instead.
@@ -42,4 +50,23 @@ export default async function AdminPage() {
       )}
     </main>
   );
+}
+
+async function loadAdminData(supabase: Awaited<ReturnType<typeof createClient>>) {
+  const [ingredientsRes, drinksRes] = await Promise.all([
+    supabase.from("ingredients").select("id, name, display_name, type, in_stock, homemade, addon, note"),
+    supabase.from("drinks").select("name, drink_ingredients(ingredient_id)").order("sort_order"),
+  ]);
+  if (ingredientsRes.error || drinksRes.error) {
+    console.error("Failed to load admin data:", (ingredientsRes.error ?? drinksRes.error)!.message);
+    return null;
+  }
+
+  // ingredient id → names of drinks that use it
+  const usage: Record<string, string[]> = {};
+  for (const d of drinksRes.data as { name: string; drink_ingredients: { ingredient_id: string }[] }[]) {
+    for (const { ingredient_id } of d.drink_ingredients) (usage[ingredient_id] ??= []).push(d.name);
+  }
+
+  return { ingredients: ingredientsRes.data as Ingredient[], usage };
 }

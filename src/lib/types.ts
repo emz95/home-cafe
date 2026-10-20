@@ -35,6 +35,17 @@ export const ADDON_LABELS: Record<IngredientType, string> = {
   other: "Other",
 };
 
+// Type names in the admin editor.
+export const TYPE_LABELS: Record<IngredientType, string> = {
+  espresso: "Espresso",
+  tea: "Tea",
+  milk: "Milk",
+  syrup: "Syrup",
+  foam: "Cold foam",
+  topping: "Topping",
+  other: "Other",
+};
+
 export function menuName(i: Ingredient) {
   return i.display_name?.trim() || i.name;
 }
