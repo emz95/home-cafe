@@ -7,9 +7,10 @@ create table public.ingredients (
   name        text not null,
   display_name text,
   type        text not null default 'other'
-              check (type in ('espresso','milk','syrup','tea','topping','other')),
+              check (type in ('espresso','milk','syrup','foam','tea','topping','other')),
   in_stock    boolean not null default true,
   homemade    boolean not null default false,
+  addon       boolean not null default false,
   note        text,
   created_at  timestamptz not null default now()
 );
@@ -28,7 +29,6 @@ create table public.drinks (
 create table public.drink_ingredients (
   drink_id       uuid not null references public.drinks(id) on delete cascade,
   ingredient_id  uuid not null references public.ingredients(id) on delete cascade,
-  optional       boolean not null default false,
   primary key (drink_id, ingredient_id)
 );
 

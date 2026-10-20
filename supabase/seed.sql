@@ -2,15 +2,15 @@
 -- Run after schema.sql. Edit or delete anything from /admin afterwards.
 
 with ing as (
-  insert into public.ingredients (name, type, in_stock, homemade) values
-    ('Espresso',           'espresso', true,  false),
-    ('Oat milk',           'milk',     true,  false),
-    ('Whole milk',         'milk',     true,  false),
-    ('Brown sugar syrup',  'syrup',    true,  true),
-    ('Vanilla syrup',      'syrup',    true,  true),
-    ('Matcha',             'tea',      true,  false),
-    ('Cold foam',          'topping',  false, true),
-    ('Cinnamon',           'topping',  true,  false)
+  insert into public.ingredients (name, type, in_stock, homemade, addon) values
+    ('Espresso',           'espresso', true,  false, true),
+    ('Oat milk',           'milk',     true,  false, true),
+    ('Whole milk',         'milk',     true,  false, false),
+    ('Brown sugar syrup',  'syrup',    true,  true,  true),
+    ('Vanilla syrup',      'syrup',    true,  true,  true),
+    ('Matcha',             'tea',      true,  false, false),
+    ('Vanilla cold foam',  'foam',     false, true,  true),
+    ('Cinnamon',           'topping',  true,  false, true)
   returning id, name
 ),
 dr as (
@@ -20,19 +20,17 @@ dr as (
     ('Iced Matcha Latte',     'Tea',    'Whisked matcha over milk and ice.',               3)
   returning id, name
 )
-insert into public.drink_ingredients (drink_id, ingredient_id, optional)
-select dr.id, ing.id, x.optional
+insert into public.drink_ingredients (drink_id, ingredient_id)
+select dr.id, ing.id
 from (values
-  ('Brown Sugar Oat Latte', 'Espresso',          false),
-  ('Brown Sugar Oat Latte', 'Oat milk',          false),
-  ('Brown Sugar Oat Latte', 'Brown sugar syrup', false),
-  ('Brown Sugar Oat Latte', 'Cinnamon',          true),
-  ('Vanilla Latte',         'Espresso',          false),
-  ('Vanilla Latte',         'Whole milk',        false),
-  ('Vanilla Latte',         'Vanilla syrup',     false),
-  ('Iced Matcha Latte',     'Matcha',            false),
-  ('Iced Matcha Latte',     'Whole milk',        false),
-  ('Iced Matcha Latte',     'Cold foam',         true)
-) as x(drink, ingredient, optional)
+  ('Brown Sugar Oat Latte', 'Espresso'),
+  ('Brown Sugar Oat Latte', 'Oat milk'),
+  ('Brown Sugar Oat Latte', 'Brown sugar syrup'),
+  ('Vanilla Latte',         'Espresso'),
+  ('Vanilla Latte',         'Whole milk'),
+  ('Vanilla Latte',         'Vanilla syrup'),
+  ('Iced Matcha Latte',     'Matcha'),
+  ('Iced Matcha Latte',     'Whole milk')
+) as x(drink, ingredient)
 join dr  on dr.name  = x.drink
 join ing on ing.name = x.ingredient;
