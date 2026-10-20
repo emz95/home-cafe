@@ -2,21 +2,42 @@
 
 import { type Dispatch, type SetStateAction, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { type AdminDrink, type Ingredient, sortIngredients, TYPE_LABELS, TYPE_ORDER } from "@/lib/types";
+import {
+  type AdminDrink,
+  type Ingredient,
+  sortIngredients,
+  TYPE_LABELS,
+  TYPE_ORDER,
+  type WishlistItem,
+} from "@/lib/types";
+import { Checkbox, Field, WishlistSection } from "./form";
 
 type Draft = Pick<AdminDrink, "name" | "category" | "description" | "hidden" | "ingredient_ids">;
 
-type View = { kind: "list" } | { kind: "add" } | { kind: "edit"; id: string };
+type View = { kind: "list" } | { kind: "add"; from?: WishlistItem } | { kind: "edit"; id: string };
 
 type Props = {
   drinks: AdminDrink[];
   setDrinks: Dispatch<SetStateAction<AdminDrink[]>>;
   ingredients: Ingredient[];
+  wishlist: WishlistItem[];
+  // wishlist item to start adding as soon as the tab opens
+  pending: WishlistItem | null;
+  onWishlistAdded: (id: string) => void;
+  onOpenWishlist: (item: WishlistItem) => void;
 };
 
-export default function DrinksEditor({ drinks, setDrinks, ingredients }: Props) {
+export default function DrinksEditor({
+  drinks,
+  setDrinks,
+  ingredients,
+  wishlist,
+  pending,
+  onWishlistAdded,
+  onOpenWishlist,
+}: Props) {
   const supabase = createClient();
-  const [view, setView] = useState<View>({ kind: "list" });
+  const [view, setView] = useState<View>(pending ? { kind: "add", from: pending } : { kind: "list" });
   const [message, setMessage] = useState<{ kind: "ok" | "error"; text: string } | null>(null);
 
   const categories = [...new Set(drinks.map((d) => d.category))];
@@ -43,6 +64,7 @@ export default function DrinksEditor({ drinks, setDrinks, ingredients }: Props) 
     }
 
     setDrinks((list) => [...list, { ...(data as Omit<AdminDrink, "ingredient_ids">), ingredient_ids }]);
+    if (view.kind === "add" && view.from) onWishlistAdded(view.from.id);
     setMessage({ kind: "ok", text: `Added ${draft.name}.` });
     setView({ kind: "list" });
   }
@@ -95,6 +117,7 @@ export default function DrinksEditor({ drinks, setDrinks, ingredients }: Props) 
         {status}
         <DrinkForm
           title="Add drink"
+          defaultName={view.from?.name}
           submitLabel="Add"
           ingredients={ingredients}
           categories={categories}
@@ -186,6 +209,8 @@ export default function DrinksEditor({ drinks, setDrinks, ingredients }: Props) 
           ))}
         </div>
       )}
+
+      <WishlistSection items={wishlist} onOpen={onOpenWishlist} />
     </div>
   );
 }
@@ -194,6 +219,7 @@ export default function DrinksEditor({ drinks, setDrinks, ingredients }: Props) 
 function DrinkForm({
   title,
   initial,
+  defaultName,
   submitLabel,
   ingredients,
   categories,
@@ -203,6 +229,7 @@ function DrinkForm({
 }: {
   title: string;
   initial?: AdminDrink;
+  defaultName?: string;
   submitLabel: string;
   ingredients: Ingredient[];
   categories: string[];
@@ -210,7 +237,7 @@ function DrinkForm({
   onCancel: () => void;
   onDelete?: () => Promise<void>;
 }) {
-  const [name, setName] = useState(initial?.name ?? "");
+  const [name, setName] = useState(initial?.name ?? defaultName ?? "");
   const [category, setCategory] = useState(initial?.category ?? categories[0] ?? "Coffee");
   const [description, setDescription] = useState(initial?.description ?? "");
   const [hidden, setHidden] = useState(initial?.hidden ?? false);
@@ -345,32 +372,5 @@ function DrinkForm({
         )}
       </div>
     </form>
-  );
-}
-
-function Field({ label, hint, htmlFor, children }: { label: string; hint?: string; htmlFor: string; children: React.ReactNode }) {
-  return (
-    <div className="flex flex-col gap-1">
-      <label htmlFor={htmlFor} className="font-semibold">
-        {label}
-      </label>
-      {hint && <p className="text-sm text-muted">{hint}</p>}
-      {children}
-    </div>
-  );
-}
-
-function Checkbox({ id, label, checked, onChange }: { id: string; label: string; checked: boolean; onChange: () => void }) {
-  return (
-    <label htmlFor={id} className="flex cursor-pointer items-center gap-3">
-      <input
-        id={id}
-        type="checkbox"
-        checked={checked}
-        onChange={onChange}
-        className="size-5 cursor-pointer accent-[var(--ink)]"
-      />
-      {label}
-    </label>
   );
 }

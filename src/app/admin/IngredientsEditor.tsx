@@ -2,13 +2,21 @@
 
 import { type Dispatch, type SetStateAction, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { type Ingredient, type IngredientType, sortIngredients, TYPE_LABELS, TYPE_ORDER } from "@/lib/types";
+import {
+  type Ingredient,
+  type IngredientType,
+  sortIngredients,
+  TYPE_LABELS,
+  TYPE_ORDER,
+  type WishlistItem,
+} from "@/lib/types";
+import { Checkbox, Field, WishlistSection } from "./form";
 
 const COLUMNS = "id, name, display_name, type, in_stock, homemade, addon, note";
 
 type Draft = Pick<Ingredient, "name" | "display_name" | "type" | "homemade" | "addon">;
 
-type View = { kind: "list" } | { kind: "add" } | { kind: "edit"; id: string };
+type View = { kind: "list" } | { kind: "add"; from?: WishlistItem } | { kind: "edit"; id: string };
 
 type Props = {
   ingredients: Ingredient[];
@@ -17,11 +25,25 @@ type Props = {
   usage: Record<string, string[]>;
   // drop a deleted ingredient from drinks held by the other tab
   onDeleted: (id: string) => void;
+  wishlist: WishlistItem[];
+  // wishlist item to start adding as soon as the tab opens
+  pending: WishlistItem | null;
+  onWishlistAdded: (id: string) => void;
+  onOpenWishlist: (item: WishlistItem) => void;
 };
 
-export default function IngredientsEditor({ ingredients, setIngredients, usage, onDeleted }: Props) {
+export default function IngredientsEditor({
+  ingredients,
+  setIngredients,
+  usage,
+  onDeleted,
+  wishlist,
+  pending,
+  onWishlistAdded,
+  onOpenWishlist,
+}: Props) {
   const supabase = createClient();
-  const [view, setView] = useState<View>({ kind: "list" });
+  const [view, setView] = useState<View>(pending ? { kind: "add", from: pending } : { kind: "list" });
   const [search, setSearch] = useState("");
   const [message, setMessage] = useState<{ kind: "ok" | "error"; text: string } | null>(null);
 
@@ -50,6 +72,7 @@ export default function IngredientsEditor({ ingredients, setIngredients, usage, 
       .single();
     if (error) return fail(`Couldn't add ${draft.name}: ${error.message}`);
     setIngredients((list) => [...list, data as Ingredient]);
+    if (view.kind === "add" && view.from) onWishlistAdded(view.from.id);
     setMessage({ kind: "ok", text: `Added ${draft.name}.` });
     setView({ kind: "list" });
   }
@@ -81,7 +104,13 @@ export default function IngredientsEditor({ ingredients, setIngredients, usage, 
     return (
       <div className="flex flex-col gap-6">
         {status}
-        <IngredientForm title="Add ingredient" submitLabel="Add" onSubmit={add} onCancel={() => setView({ kind: "list" })} />
+        <IngredientForm
+          title="Add ingredient"
+          defaultName={view.from?.name}
+          submitLabel="Add"
+          onSubmit={add}
+          onCancel={() => setView({ kind: "list" })}
+        />
       </div>
     );
   }
@@ -174,6 +203,8 @@ export default function IngredientsEditor({ ingredients, setIngredients, usage, 
           </ul>
         )}
       </div>
+
+      <WishlistSection items={wishlist} onOpen={onOpenWishlist} />
     </div>
   );
 }
@@ -182,6 +213,7 @@ export default function IngredientsEditor({ ingredients, setIngredients, usage, 
 function IngredientForm({
   title,
   initial,
+  defaultName,
   submitLabel,
   usedIn = [],
   onSubmit,
@@ -190,13 +222,14 @@ function IngredientForm({
 }: {
   title: string;
   initial?: Ingredient;
+  defaultName?: string;
   submitLabel: string;
   usedIn?: string[];
   onSubmit: (draft: Draft) => Promise<void>;
   onCancel: () => void;
   onDelete?: () => Promise<void>;
 }) {
-  const [name, setName] = useState(initial?.name ?? "");
+  const [name, setName] = useState(initial?.name ?? defaultName ?? "");
   const [displayName, setDisplayName] = useState(initial?.display_name ?? "");
   const [type, setType] = useState<IngredientType>(initial?.type ?? "syrup");
   const [homemade, setHomemade] = useState(initial?.homemade ?? false);
@@ -296,32 +329,5 @@ function IngredientForm({
         )}
       </div>
     </form>
-  );
-}
-
-function Field({ label, hint, htmlFor, children }: { label: string; hint?: string; htmlFor: string; children: React.ReactNode }) {
-  return (
-    <div className="flex flex-col gap-1">
-      <label htmlFor={htmlFor} className="font-semibold">
-        {label}
-      </label>
-      {hint && <p className="text-sm text-muted">{hint}</p>}
-      {children}
-    </div>
-  );
-}
-
-function Checkbox({ id, label, checked, onChange }: { id: string; label: string; checked: boolean; onChange: (v: boolean) => void }) {
-  return (
-    <label htmlFor={id} className="flex cursor-pointer items-center gap-3">
-      <input
-        id={id}
-        type="checkbox"
-        checked={checked}
-        onChange={(e) => onChange(e.target.checked)}
-        className="size-5 cursor-pointer accent-[var(--ink)]"
-      />
-      {label}
-    </label>
   );
 }

@@ -24,6 +24,22 @@ export type Drink = {
 // A drink as the admin editor holds it: ingredient ids instead of full ingredients.
 export type AdminDrink = Omit<Drink, "ingredients"> & { ingredient_ids: string[] };
 
+export type WishlistKind = "ingredient" | "material" | "drink";
+
+export type WishlistItem = {
+  id: string;
+  name: string;
+  kind: WishlistKind;
+  note: string | null;
+};
+
+// Wishlist sections, in order.
+export const WISHLIST_KINDS: { kind: WishlistKind; label: string; one: string }[] = [
+  { kind: "ingredient", label: "Ingredients", one: "Ingredient" },
+  { kind: "material", label: "Materials", one: "Material" },
+  { kind: "drink", label: "Drinks", one: "Drink" },
+];
+
 // Order ingredients are listed in under a drink, and add-on groups on the menu.
 export const TYPE_ORDER: IngredientType[] = ["espresso", "tea", "milk", "syrup", "foam", "topping", "other"];
 
