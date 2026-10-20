@@ -32,6 +32,15 @@ create table public.drink_ingredients (
   primary key (drink_id, ingredient_id)
 );
 
+-- Things to buy or try. Admin only.
+create table public.wishlist (
+  id          uuid primary key default gen_random_uuid(),
+  name        text not null,
+  kind        text not null check (kind in ('ingredient','material','drink')),
+  note        text,
+  created_at  timestamptz not null default now()
+);
+
 -- Emails allowed to edit the menu. 
 create table public.admins (
   email text primary key
@@ -57,6 +66,7 @@ $$;
 alter table public.ingredients       enable row level security;
 alter table public.drinks            enable row level security;
 alter table public.drink_ingredients enable row level security;
+alter table public.wishlist          enable row level security;
 alter table public.admins            enable row level security;  -- no policies: not readable via the API
 
 create policy "public read"  on public.ingredients       for select using (true);
@@ -67,5 +77,7 @@ create policy "admin write"  on public.drinks            for all    using (publi
 
 create policy "public read"  on public.drink_ingredients for select using (true);
 create policy "admin write"  on public.drink_ingredients for all    using (public.is_admin()) with check (public.is_admin());
+
+create policy "admin only"   on public.wishlist          for all    using (public.is_admin()) with check (public.is_admin());
 
 insert into public.admins (email) values ('emma91zhang@gmail.com');
