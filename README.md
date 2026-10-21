@@ -2,7 +2,7 @@
 
 Hello! I really enjoy tea and making drinks at home (and it saves money).
 
-This is where I keep my current menu of drinks and what's on my wishlist.
+This is where I keep my current menu of drinks and what's on my wishlist. I really enjoy boba and collecting tea!
 
 View the menu: [emmas-cafe.vercel.app](https://emmas-cafe.vercel.app)
 
