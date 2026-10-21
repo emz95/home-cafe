@@ -3,6 +3,7 @@
 import { type Dispatch, type SetStateAction, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import {
+  ADDON_LABELS,
   type Ingredient,
   type IngredientType,
   sortIngredients,
@@ -173,34 +174,44 @@ export default function IngredientsEditor({
             {ingredients.length === 0 ? "No ingredients yet. Tap Add ingredient to add your first one." : "No matches."}
           </p>
         ) : (
-          <ul className="flex flex-col">
-            <li className="flex justify-between pb-2 text-sm text-muted" aria-hidden>
-              <span>Ingredient</span>
-              <span>In stock</span>
-            </li>
-            {shown.map((i) => (
-              <li key={i.id} className="flex items-center gap-4 border-t border-line py-3">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setMessage(null);
-                    setView({ kind: "edit", id: i.id });
-                  }}
-                  className={`min-w-0 flex-1 text-left hover:underline hover:underline-offset-4 ${i.in_stock ? "" : "text-muted"}`}
-                >
-                  {i.name}
-                </button>
-                <input
-                  id={`stock-${i.id}`}
-                  type="checkbox"
-                  aria-label={`${i.name} in stock`}
-                  checked={i.in_stock}
-                  onChange={() => toggleStock(i)}
-                  className="size-5 shrink-0 cursor-pointer accent-[var(--ink)]"
-                />
-              </li>
-            ))}
-          </ul>
+          <div className="flex flex-col gap-8">
+            {TYPE_ORDER.map((type) => [type, shown.filter((i) => i.type === type)] as const)
+              .filter(([, items]) => items.length > 0)
+              .map(([type, items]) => (
+                <section key={type}>
+                  <div className="mb-2 flex justify-between">
+                    <h3 className="text-sm font-semibold tracking-[0.2em] text-muted uppercase">{ADDON_LABELS[type]}</h3>
+                    <span className="text-sm text-muted" aria-hidden>
+                      In stock
+                    </span>
+                  </div>
+                  <ul className="flex flex-col">
+                    {items.map((i) => (
+                      <li key={i.id} className="flex items-center gap-4 border-t border-line py-3">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setMessage(null);
+                            setView({ kind: "edit", id: i.id });
+                          }}
+                          className={`min-w-0 flex-1 text-left hover:underline hover:underline-offset-4 ${i.in_stock ? "" : "text-muted"}`}
+                        >
+                          {i.name}
+                        </button>
+                        <input
+                          id={`stock-${i.id}`}
+                          type="checkbox"
+                          aria-label={`${i.name} in stock`}
+                          checked={i.in_stock}
+                          onChange={() => toggleStock(i)}
+                          className="size-5 shrink-0 cursor-pointer accent-[var(--ink)]"
+                        />
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              ))}
+          </div>
         )}
       </div>
 
