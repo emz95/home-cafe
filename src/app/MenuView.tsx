@@ -120,8 +120,7 @@ function IngredientName({ ingredient: i }: { ingredient: Ingredient }) {
         role="tooltip"
         className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-2 -translate-x-1/2 rounded bg-ink px-2.5 py-1 text-sm whitespace-nowrap text-bg opacity-0 transition-opacity group-hover:opacity-100 group-focus:opacity-100"
       >
-        {realName && <span className="block">{realName}</span>}
-        {i.homemade && <span className="block text-xs font-semibold tracking-wider uppercase">Homemade</span>}
+        {i.homemade ? `homemade ${i.name.toLowerCase()}` : realName}
       </span>
     </button>
   );
