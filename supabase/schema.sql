@@ -32,7 +32,7 @@ create table public.drink_ingredients (
   primary key (drink_id, ingredient_id)
 );
 
--- Things to buy or try. Admin only.
+-- Things to buy or try.
 create table public.wishlist (
   id          uuid primary key default gen_random_uuid(),
   name        text not null,
@@ -78,6 +78,7 @@ create policy "admin write"  on public.drinks            for all    using (publi
 create policy "public read"  on public.drink_ingredients for select using (true);
 create policy "admin write"  on public.drink_ingredients for all    using (public.is_admin()) with check (public.is_admin());
 
-create policy "admin only"   on public.wishlist          for all    using (public.is_admin()) with check (public.is_admin());
+create policy "public read"  on public.wishlist          for select using (true);
+create policy "admin write"  on public.wishlist          for all    using (public.is_admin()) with check (public.is_admin());
 
 insert into public.admins (email) values ('emma91zhang@gmail.com');
