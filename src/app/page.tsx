@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
-import { SITE } from "@/lib/site";
 import type { Drink, Ingredient } from "@/lib/types";
 import MenuView from "./MenuView";
+import SiteHeader from "./SiteHeader";
 
 // Always read fresh stock levels.
 export const dynamic = "force-dynamic";
@@ -42,10 +42,7 @@ export default async function MenuPage() {
 
   return (
     <main className="mx-auto w-full max-w-4xl px-4 pt-16 pb-24 sm:px-6 sm:pt-24">
-      <header className="mb-12 sm:mb-16">
-        <p className="text-sm font-semibold tracking-[0.2em] text-muted uppercase">Menu</p>
-        <h1 className="mt-3 text-5xl leading-tight font-normal sm:text-6xl">{SITE.name}</h1>
-      </header>
+      <SiteHeader active="/" />
 
       {menu === null ? (
         <p className="rounded-lg border border-line bg-surface p-6 text-muted">
