@@ -1,6 +1,6 @@
 "use client";
 
-import { type Dispatch, type SetStateAction, useState } from "react";
+import { type Dispatch, type SetStateAction, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import {
   type AdminDrink,
@@ -40,7 +40,9 @@ export default function DrinksEditor({
   const [view, setView] = useState<View>(pending ? { kind: "add", from: pending } : { kind: "list" });
   const [message, setMessage] = useState<{ kind: "ok" | "error"; text: string } | null>(null);
 
-  const categories = [...new Set(drinks.map((d) => d.category))];
+  const sorted = [...drinks].sort((a, b) => a.sort_order - b.sort_order);
+  // Sections in the order of their first drink, like the menu.
+  const categories = [...new Set(sorted.map((d) => d.category))];
 
   function fail(text: string) {
     setMessage({ kind: "error", text });
@@ -105,6 +107,62 @@ export default function DrinksEditor({
     setView({ kind: "list" });
   }
 
+  // Renumber every drink so sections follow `order`; drinks keep their order within a section.
+  async function saveSectionOrder(order: string[]) {
+    const updates: { id: string; sort_order: number }[] = [];
+    let n = 1;
+    for (const category of order) {
+      for (const d of sorted.filter((d) => d.category === category)) {
+        if (d.sort_order !== n) updates.push({ id: d.id, sort_order: n });
+        n++;
+      }
+    }
+
+    const results = await Promise.all(
+      updates.map((u) => supabase.from("drinks").update({ sort_order: u.sort_order }).eq("id", u.id)),
+    );
+    const error = results.find((r) => r.error)?.error;
+    if (error) return fail(`Couldn't save the new order: ${error.message}. Refresh to see the current order.`);
+
+    const byId = new Map(updates.map((u) => [u.id, u.sort_order]));
+    setDrinks((list) => list.map((d) => (byId.has(d.id) ? { ...d, sort_order: byId.get(d.id)! } : d)));
+    setMessage({ kind: "ok", text: "Saved section order." });
+  }
+
+  // Section titles are drag handles. While dragging, `dragOrder` is the order on screen.
+  const [dragging, setDragging] = useState<string | null>(null);
+  const [dragOrder, setDragOrder] = useState<string[] | null>(null);
+  const sectionsRef = useRef<HTMLDivElement>(null);
+  const shownOrder = dragOrder ?? categories;
+
+  function onSectionPointerMove(e: React.PointerEvent) {
+    if (!dragging || !dragOrder || !sectionsRef.current) return;
+    const from = dragOrder.indexOf(dragging);
+    const sections = [...sectionsRef.current.children] as HTMLElement[];
+    // New position = how many other sections have their middle above the pointer.
+    const to = sections.filter((el, i) => {
+      if (i === from) return false;
+      const box = el.getBoundingClientRect();
+      return box.top + box.height / 2 < e.clientY;
+    }).length;
+    if (to !== from) setDragOrder(moveItem(dragOrder, from, to));
+  }
+
+  async function endSectionDrag() {
+    const order = dragOrder;
+    setDragging(null);
+    if (order && order.join("\n") !== categories.join("\n")) await saveSectionOrder(order);
+    setDragOrder(null);
+  }
+
+  function onSectionKeyDown(e: React.KeyboardEvent, category: string) {
+    const from = categories.indexOf(category);
+    const to = e.key === "ArrowUp" ? from - 1 : e.key === "ArrowDown" ? from + 1 : -1;
+    if (to < 0 || to >= categories.length) return;
+    e.preventDefault();
+    saveSectionOrder(moveItem(categories, from, to));
+  }
+
   const status = message && (
     <p role="status" className={message.kind === "error" ? "font-semibold" : "text-muted"}>
       {message.text}
@@ -148,9 +206,8 @@ export default function DrinksEditor({
     );
   }
 
-  // Categories in the order of their first drink, like the menu.
   const groups = new Map<string, AdminDrink[]>();
-  for (const d of [...drinks].sort((a, b) => a.sort_order - b.sort_order)) {
+  for (const d of sorted) {
     if (!groups.has(d.category)) groups.set(d.category, []);
     groups.get(d.category)!.push(d);
   }
@@ -179,10 +236,27 @@ export default function DrinksEditor({
       {drinks.length === 0 ? (
         <p className="text-muted">No drinks yet. Tap Add drink to add your first one.</p>
       ) : (
-        <div className="flex flex-col gap-8">
-          {[...groups.entries()].map(([category, list]) => (
-            <section key={category}>
-              <h3 className="mb-2 text-sm font-semibold tracking-[0.2em] text-muted uppercase">{category}</h3>
+        <div ref={sectionsRef} className="flex flex-col gap-8">
+          {shownOrder.map((category) => [category, groups.get(category) ?? []] as const).map(([category, list]) => (
+            <section key={category} className={dragging === category ? "opacity-60" : ""}>
+              <h3
+                tabIndex={0}
+                aria-label={`${category}. Drag, or press the up and down arrow keys, to move this section.`}
+                onPointerDown={(e) => {
+                  e.currentTarget.setPointerCapture(e.pointerId);
+                  setDragging(category);
+                  setDragOrder(categories);
+                }}
+                onPointerMove={onSectionPointerMove}
+                onPointerUp={endSectionDrag}
+                onPointerCancel={endSectionDrag}
+                onKeyDown={(e) => onSectionKeyDown(e, category)}
+                className={`mb-2 touch-none text-sm font-semibold tracking-[0.2em] text-muted uppercase select-none ${
+                  dragging === category ? "cursor-grabbing" : "cursor-grab"
+                }`}
+              >
+                {category}
+              </h3>
               <ul className="flex flex-col">
                 {list.map((d) => {
                   const unavailable = d.ingredient_ids.some((id) => outOfStock.has(id));
@@ -213,6 +287,13 @@ export default function DrinksEditor({
       <WishlistSection items={wishlist} onOpen={onOpenWishlist} />
     </div>
   );
+}
+
+function moveItem<T>(list: T[], from: number, to: number) {
+  const next = [...list];
+  const [item] = next.splice(from, 1);
+  next.splice(to, 0, item);
+  return next;
 }
 
 // One drink at a time: used for both Add and Edit. Back and Cancel leave without saving.
