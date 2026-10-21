@@ -18,7 +18,7 @@ export default async function AdminPage() {
   const data = isAdmin ? await loadAdminData(supabase) : null;
 
   return (
-    <main className="mx-auto w-full max-w-4xl px-4 pt-16 pb-24 sm:px-6">
+    <main className="mx-auto w-full max-w-4xl px-8 pt-16 pb-24 sm:px-10">
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="text-sm font-semibold tracking-[0.2em] text-muted uppercase">Admin</p>

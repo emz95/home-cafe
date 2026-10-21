@@ -24,7 +24,7 @@ export default async function WishlistPage() {
   })).filter((g) => g.items.length > 0);
 
   return (
-    <main className="mx-auto w-full max-w-4xl px-4 pt-16 pb-24 sm:px-6 sm:pt-24">
+    <main className="mx-auto w-full max-w-4xl px-8 pt-16 pb-24 sm:px-10 sm:pt-24">
       <SiteHeader active="/wishlist" />
 
       {error ? (

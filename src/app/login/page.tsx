@@ -22,7 +22,7 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="mx-auto w-full max-w-sm px-4 pt-24 pb-24">
+    <main className="mx-auto w-full max-w-sm px-8 pt-24 pb-24">
       <p className="text-sm font-semibold tracking-[0.2em] text-muted uppercase">Admin</p>
       <h1 className="mt-3 text-4xl leading-tight">Sign in</h1>
 
